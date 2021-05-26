@@ -29,7 +29,7 @@ def get_credentials():
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            credentials = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(credentials.to_json())
@@ -82,13 +82,33 @@ def main():
     # Retrieve the documents contents from the Docs service.
     document = service.documents().get(documentId=DOCUMENT_ID).execute()
     content = document.get('body').get('content')
-    print(read_structural_elements(content))
-    print('\n')
+    value1 = find_paragraph(content, 'HEADING_1')
+    value2 = []
     for value in content:
-        if 'paragraph' in value:
-            elements = value.get('paragraph').get('elements')
-            for elem in elements:
-                print(read_paragraph_element(elem))
+        if value in value1:
+            value2 = find_paragraph(content, 'HEADING_2')
+    for elem in value1:
+        if 'paragraph' in elem:
+            ph = elem.get('paragraph').get('elements')
+            for e in ph:
+                print(read_paragraph_element(e))
+
+
+def find_paragraph(content, style):
+    values1 = []
+    for value in content:
+        if paragraph_style(value) == style:
+            values1.append(value)
+    return values1
+
+
+def paragraph_style(element):
+    if 'paragraph' in element:
+        paragraph = element.get('paragraph')
+        if 'paragraphStyle' in paragraph:
+            style = paragraph.get('paragraphStyle')
+            if 'namedStyleType' in style:
+                return style.get('namedStyleType')
 
 
 if __name__ == '__main__':

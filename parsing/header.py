@@ -1,0 +1,3 @@
+class Header:
+    links = []
+    subheaders = []
