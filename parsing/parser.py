@@ -64,7 +64,7 @@ def get_headings():
             header.links = find_links(value)
             headings.append(header)
     for header in headings:
-        create_structure(header, content, 'HEADING_1')
+        find_subheadings(header, content, 'HEADING_1')
     return headings
 
 
@@ -77,7 +77,7 @@ def get_name(element):
                 return text_run.get('content')
 
 
-def create_structure(parent_header, content, style):
+def find_subheadings(parent_header, content, style):
     flag = 0
     subheaders = []
     for value in content:
@@ -89,7 +89,7 @@ def create_structure(parent_header, content, style):
                 subheader.name = get_name(value)
                 subheader.links = find_links(value)
                 subheaders.append(subheader)
-                create_structure(subheader, content, next_paragraph_style(style))
+                find_subheadings(subheader, content, next_paragraph_style(style))
         elif get_name(value) == parent_header.name:
             flag = 1
     parent_header.subheaders = subheaders
