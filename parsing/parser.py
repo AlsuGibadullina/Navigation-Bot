@@ -5,6 +5,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
+from parsing.header import Header
+
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
 
@@ -48,58 +50,78 @@ def read_paragraph_element(element):
     return text_run.get('content')
 
 
-def read_structural_elements(elements):
-    """Recurses through a list of Structural Elements to read a document's text where text may be
-        in nested elements.
-
-        Args:
-            elements: a list of Structural Elements.
-    """
-    text = ''
-    for value in elements:
-        if 'paragraph' in value:
-            elements = value.get('paragraph').get('elements')
-            for elem in elements:
-                text += read_paragraph_element(elem)
-        elif 'table' in value:
-            # The text in table cells are in nested Structural Elements and tables may be
-            # nested.
-            table = value.get('table')
-            for row in table.get('tableRows'):
-                cells = row.get('tableCells')
-                for cell in cells:
-                    text += read_structural_elements(cell.get('content'))
-        elif 'tableOfContents' in value:
-            # The text in the TOC is also in a Structural Element.
-            toc = value.get('tableOfContents')
-            text += read_structural_elements(toc.get('content'))
-    return text
-
-
-def main():
+def get_headings():
     credentials = get_credentials()
     service = build('docs', 'v1', credentials=credentials)
     # Retrieve the documents contents from the Docs service.
     document = service.documents().get(documentId=DOCUMENT_ID).execute()
+    headings = []
     content = document.get('body').get('content')
-    value1 = find_paragraph(content, 'HEADING_1')
-    value2 = []
     for value in content:
-        if value in value1:
-            value2 = find_paragraph(content, 'HEADING_2')
-    for elem in value1:
-        if 'paragraph' in elem:
-            ph = elem.get('paragraph').get('elements')
-            for e in ph:
-                print(read_paragraph_element(e))
+        if paragraph_style(value) == 'HEADING_1':
+            header = Header()
+            header.name = get_name(value)
+            header.links = find_links(value)
+            headings.append(header)
+    for header in headings:
+        create_structure(header, content, 'HEADING_1')
+    return headings
 
 
-def find_paragraph(content, style):
-    values1 = []
+def get_name(element):
+    if 'paragraph' in element:
+        elements = element.get('paragraph').get('elements')
+        for elem in elements:
+            if 'textRun' in elem:
+                text_run = elem.get('textRun')
+                return text_run.get('content')
+
+
+def create_structure(parent_header, content, style):
+    flag = 0
+    subheaders = []
     for value in content:
-        if paragraph_style(value) == style:
-            values1.append(value)
-    return values1
+        if flag == 1:
+            if paragraph_style(value) == style:
+                break
+            if paragraph_style(value) == next_paragraph_style(style):
+                subheader = Header()
+                subheader.name = get_name(value)
+                subheader.links = find_links(value)
+                subheaders.append(subheader)
+                create_structure(subheader, content, next_paragraph_style(style))
+        elif get_name(value) == parent_header.name:
+            flag = 1
+    parent_header.subheaders = subheaders
+
+
+def find_links(element):
+    links = []
+    if 'paragraph' in element:
+        elements = element.get('paragraph').get('elements')
+        for elem in elements:
+            if 'textRun' in elem:
+                text_run = elem.get('textRun')
+                if 'textStyle' in text_run:
+                    text_style = text_run.get('textStyle')
+                    if 'link' in text_style:
+                        links.append(text_style.get('link').get('url'))
+    return links
+
+
+def next_paragraph_style(style):
+    if style == 'HEADING_1':
+        return 'HEADING_2'
+    if style == 'HEADING_2':
+        return 'HEADING_3'
+    if style == 'HEADING_3':
+        return 'HEADING_4'
+    if style == 'HEADING_4':
+        return 'HEADING_5'
+    if style == 'HEADING_5':
+        return 'HEADING_6'
+    if style == 'HEADING_6':
+        return ''
 
 
 def paragraph_style(element):
@@ -112,4 +134,6 @@ def paragraph_style(element):
 
 
 if __name__ == '__main__':
-    main()
+    heads = get_headings()
+    for head in heads:
+        print(str(head))
