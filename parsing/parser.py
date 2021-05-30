@@ -50,6 +50,13 @@ def read_paragraph_element(element):
     return text_run.get('content')
 
 
+def reformat(name):
+    name = name.replace("$", "")
+    name = name.replace("", "")
+    name = name.replace("\n", "")
+    return name
+
+
 def get_headings():
     credentials = get_credentials()
     service = build('docs', 'v1', credentials=credentials)
@@ -59,12 +66,14 @@ def get_headings():
     content = document.get('body').get('content')
     for value in content:
         if paragraph_style(value) == 'HEADING_1':
-            header = Header()
-            header.name = get_name(value)
-            header.links = find_links(value)
-            headings.append(header)
-    for header in headings:
-        find_subheadings(header, content, 'HEADING_1')
+            name = get_name(value)
+            name = reformat(name)
+            if len(name) > 0:
+                header = Header()
+                header.name = name
+                header.links = find_links(value)
+                headings.append(header)
+                find_subheadings(value, header, content, 'HEADING_1')
     return headings
 
 
@@ -77,7 +86,7 @@ def get_name(element):
                 return text_run.get('content')
 
 
-def find_subheadings(parent_header, content, style):
+def find_subheadings(element, parent_header, content, style):
     flag = 0
     subheaders = []
     for value in content:
@@ -85,12 +94,15 @@ def find_subheadings(parent_header, content, style):
             if paragraph_style(value) == style:
                 break
             if paragraph_style(value) == next_paragraph_style(style):
-                subheader = Header()
-                subheader.name = get_name(value)
-                subheader.links = find_links(value)
-                subheaders.append(subheader)
-                find_subheadings(subheader, content, next_paragraph_style(style))
-        elif get_name(value) == parent_header.name:
+                name = get_name(value)
+                name = reformat(name)
+                if len(name) > 0:
+                    subheader = Header()
+                    subheader.name = name
+                    subheader.links = find_links(value)
+                    subheaders.append(subheader)
+                    find_subheadings(value, subheader, content, next_paragraph_style(style))
+        elif value == element:
             flag = 1
     parent_header.subheaders = subheaders
 

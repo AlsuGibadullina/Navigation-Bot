@@ -4,7 +4,7 @@ class Header:
     subheaders = []
 
     def __str__(self) -> str:
-        text = self.name + 'links:\n'
+        text = self.name + '\nlinks:\n'
         for link in self.links:
             text += link + ' '
         text += 'subheads:\n'
