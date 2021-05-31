@@ -30,7 +30,7 @@ def get_credentials():
             credentials.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                'parsing/credentials.json', SCOPES)
             credentials = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
@@ -39,11 +39,6 @@ def get_credentials():
 
 
 def read_paragraph_element(element):
-    """Returns the text in the given ParagraphElement.
-
-        Args:
-            element: a ParagraphElement from a Google Doc.
-    """
     text_run = element.get('textRun')
     if not text_run:
         return ''
@@ -51,6 +46,10 @@ def read_paragraph_element(element):
 
 
 def reformat(name):
+    while (len(name) > 0) & (name[0] == " "):
+        name = name[1:len(name)]
+    while (len(name) > 0) & (name[len(name) - 1] == " "):
+        name = name[0:len(name) - 1]
     name = name.replace("$", "")
     name = name.replace("", "")
     name = name.replace("\n", "")
@@ -60,7 +59,6 @@ def reformat(name):
 def get_headings():
     credentials = get_credentials()
     service = build('docs', 'v1', credentials=credentials)
-    # Retrieve the documents contents from the Docs service.
     document = service.documents().get(documentId=DOCUMENT_ID).execute()
     headings = []
     content = document.get('body').get('content')
