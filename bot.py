@@ -8,25 +8,38 @@ from parsing.parser import get_headings
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
+# Очередь открытых страниц (массивов заголовков)
+pages_queue = []
 
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     headers = get_headings()
+    pages_queue.clear()
+    pages_queue.append(headers)
     keyboard = kb.create_keyboard(headers)
     await message.reply("Что вас интересует?", reply_markup=keyboard)
 
 
-@dp.message_handler(commands=['help'])
-async def process_help_command(message: types.Message):
-    await message.reply(
-        "Список команд: \n/start - старт работы \n /help - помощь")
-
-
 # TODO Если возможно, по этой команде останавливать работу бота
-@dp.message_handler(commands=['exit'])
+@dp.message_handler(commands=['stop'])
 async def process_exit_command(message: types.Message):
     await message.reply("Спасибо за обращение!")
+
+
+@dp.message_handler()
+async def process_home_command(msg: types.Message):
+    if msg.text == 'На главную':
+        kb.ReplyKeyboardRemove()
+        await process_start_command(msg)
+
+
+@dp.message_handler()
+async def process_back_command(msg: types.Message):
+    if msg.text == 'Назад':
+        kb.ReplyKeyboardRemove()
+        pages_queue.pop()
+        await enter_subdirectory(msg)
 
 
 # TODO При получении сообщения бот должен проверять, есть ли в текущем массиве подзаголовков заголовок с таким названием
