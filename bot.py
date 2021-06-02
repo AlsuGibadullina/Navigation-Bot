@@ -17,6 +17,8 @@ action_list = [Header()]
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
+    stack_store.clear()
+    #action_list.clear()
     headers = get_headings()
     stack_store.extend(headers)
     keyboard = kb.create_keyboard(headers)
@@ -26,7 +28,7 @@ async def process_start_command(message: types.Message):
 @dp.message_handler()
 async def message_manager(message: types.Message):
     if action_list.__sizeof__() != 0:
-        await original_button_manager(action_list.pop(), message)
+        await original_button_manager(message)
     for head in stack_store:
         if head.get_name() == message.text:
             action_list.append(head)
@@ -42,17 +44,18 @@ async def generate_button(header, message: types.Message):
         await message.reply("Выберите из перечня нужный раздел", reply_markup=keyboard)
 
 
-async def original_button_manager(header: Header, message: types.Message):
+async def original_button_manager(message: types.Message):
     if message.text == kb.home.text:
-        stack_store.clear()
         action_list.clear()
-        stack_store.extend(get_headings())
+        await process_start_command(message)
     if message.text == kb.back.text:
+        h = action_list.pop()
         h = action_list.pop()
         stack_store.clear()
         stack_store.append(h.subheaders)
         action_list.append(h)
     if message.text == kb.links.text:
+        header = action_list.pop()
         action_list.append(header)
         await bot.send_message(message.from_user.id,
                                "Ссылки, содержащиеся в %s:\n %s" % (header.get_name(), header.links))
