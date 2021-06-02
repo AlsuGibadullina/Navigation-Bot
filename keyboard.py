@@ -11,12 +11,17 @@ def create_keyboard_start(headings):
     return keyboard
 
 
+links = KeyboardButton('Вывести ссылки')
+back = KeyboardButton('Назад')
+home = KeyboardButton('На главную')
+
 def create_keyboard(headings):
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     for header in headings:
         button = KeyboardButton(header.get_name())
         keyboard.add(button)
-    back = KeyboardButton('Назад')
-    home = KeyboardButton('На главную')
-    keyboard.row(back, home)
+#    links = KeyboardButton('Вывести ссылки')
+#    back = KeyboardButton('Назад')
+#    home = KeyboardButton('На главную')
+    keyboard.row(back, links, home)
     return keyboard

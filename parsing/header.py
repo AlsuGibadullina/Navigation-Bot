@@ -3,7 +3,7 @@ class Header:
     links = []
     subheaders = []
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
     def get_links(self):
