@@ -30,18 +30,19 @@ async def message_manager(message: types.Message):
     await original_button_manager(message)
     for head in stack_store:
         if head.get_name() == message.text:
+            action_list.append(head)
             await generate_button(head, message)
 
 
 async def generate_button(header, message: types.Message):
     subheaders = header.subheaders
     if len(subheaders) != 0:
-        action_list.append(header)
         stack_store.clear()
         stack_store.extend(subheaders)
         keyboard = kb.create_keyboard(subheaders)
         await message.reply("Выберите из перечня нужный раздел", reply_markup=keyboard)
     else:
+        action_list.pop()
         await bot.send_message(message.from_user.id,
                                "Ссылки, содержащиеся в %s:\n %s" % (header.get_name(), header.links))
 
