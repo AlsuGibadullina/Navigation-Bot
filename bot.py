@@ -30,13 +30,13 @@ async def message_manager(message: types.Message):
     await original_button_manager(message)
     for head in stack_store:
         if head.get_name() == message.text:
-            action_list.append(head)
             await generate_button(head, message)
 
 
 async def generate_button(header, message: types.Message):
     subheaders = header.subheaders
     if len(subheaders) != 0:
+        action_list.append(header)
         stack_store.clear()
         stack_store.extend(subheaders)
         keyboard = kb.create_keyboard(subheaders)
@@ -51,11 +51,12 @@ async def original_button_manager(message: types.Message):
         await process_start_command(message)
     if message.text == kb.back.text:
         if len(action_list) > 1:
-            h = action_list.pop()
+            action_list.pop()
             h = action_list.pop()
             stack_store.clear()
-            stack_store.append(h.subheaders)
+            stack_store.extend(h.subheaders)
             action_list.append(h)
+            await generate_button(h, message)
         else:
             await process_start_command(message)
     if message.text == kb.links.text:
