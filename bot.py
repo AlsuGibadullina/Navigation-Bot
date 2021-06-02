@@ -18,7 +18,7 @@ action_list = [Header()]
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     stack_store.clear()
-    #action_list.clear()
+    action_list.clear()
     headers = get_headings()
     stack_store.extend(headers)
     keyboard = kb.create_keyboard(headers)
@@ -27,8 +27,7 @@ async def process_start_command(message: types.Message):
 
 @dp.message_handler()
 async def message_manager(message: types.Message):
-    if action_list.__sizeof__() != 0:
-        await original_button_manager(message)
+    await original_button_manager(message)
     for head in stack_store:
         if head.get_name() == message.text:
             action_list.append(head)
@@ -37,23 +36,28 @@ async def message_manager(message: types.Message):
 
 async def generate_button(header, message: types.Message):
     subheaders = header.subheaders
-    if subheaders.__sizeof__() != 0:
+    if len(subheaders) != 0:
         stack_store.clear()
         stack_store.extend(subheaders)
         keyboard = kb.create_keyboard(subheaders)
         await message.reply("Выберите из перечня нужный раздел", reply_markup=keyboard)
+    else:
+        await bot.send_message(message.from_user.id,
+                               "Ссылки, содержащиеся в %s:\n %s" % (header.get_name(), header.links))
 
 
 async def original_button_manager(message: types.Message):
     if message.text == kb.home.text:
-        action_list.clear()
         await process_start_command(message)
     if message.text == kb.back.text:
-        h = action_list.pop()
-        h = action_list.pop()
-        stack_store.clear()
-        stack_store.append(h.subheaders)
-        action_list.append(h)
+        if len(action_list) > 1:
+            h = action_list.pop()
+            h = action_list.pop()
+            stack_store.clear()
+            stack_store.append(h.subheaders)
+            action_list.append(h)
+        else:
+            await process_start_command(message)
     if message.text == kb.links.text:
         header = action_list.pop()
         action_list.append(header)
